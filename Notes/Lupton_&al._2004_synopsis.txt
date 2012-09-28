@@ -1,0 +1,39 @@
+Lupton &al. 2004 -- "Preparing Red-Green-Blue Images from CCD Data"
+===================================================================
+
+- 'sheer drama and beauty of the night sky'
+
+KEY IDEA
+--------
+
+- There is a lot of information in the colouration of an image. This often helps us distinguish features / phenomena and classify astronomical objects.
+
+- Hitherto, focus has been on intensity differences.
+
+
+BACKGROUND	
+----------
+
+- We apply stretches to images in order to coax faint objects into observability. But we must strike a balance between this objective and the saturation of bright parts.
+
+- Stretch is a re-scale, bringing all objects to within a brightness cutoff range. Re-scale can be linear, ln, sqrt, depending on preference and the diversity of images.
+
+- Tuning parameters is not always straightforward. Any object above maximum brightness ends up bleached and obese.
+
+- Furthermore, there is degeneracy between brightness and colour in traditional stretching procedures.
+
+
+SOLUTION
+--------
+
+- Using a different stretching procedure, (equation 2), can discard uninteresting intensity information in favour of colour information. This works by comparing the individual colour-intensities to the total intensity (i.e. ~ compare the colours amongst themselves), and comparing the total instensity to the two cutoff intensities which define the brightness scale.
+
+- NB the colours are unique -- no degeneracy with intensity. So we can draw unambigouous conclusions from looking at colour differences.
+
+- arsinh stretch magnifies faint objects (linear regime) and avoids bleaching bright objects (logarithmic regime). (But this could be achieved with other functions too).
+
+
+EXAMPLES
+--------
+
+- Some examples are given where the standard technique loses an embarrassing amount of detail compared with the new idea. By eye, we clearly distinguish differences between objects which are otherwise just rendered as white blobs.

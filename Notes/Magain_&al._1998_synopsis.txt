@@ -1,0 +1,70 @@
+Magain, Courbin & Sohy 1998 -- "Deconvolution with Correct Sampling"
+====================================================================
+
+KEY IDEAS
+---------
+
+- We shouldn't pretend to derive infinite resolution images from discrete data. A more honest approach can mitigate the appearance of artefacts.
+
+- Bear in mind that correlations in astrnomical images are local. Global treatments and techniques are inappropriate.
+
+
+BACKGROUND
+----------
+
+- Ground-based telescopes suffer from aperture diffraction and from atmospheric inhomogeneities which distort light. One (post hoc) way of correcting for this is to infer the point spread function from a puative point source in your image; if we consider the data to represent "reality" or the "scene" convolved with this PSF, then we can in principle deconvolve the data from the PSF to retrieve the scene. 
+
+- There will be many scenes compatible with the (uncertain) data, so we must then pose the problem as an optimisation problem: we wish to find the scene, compatible with the data, that minimises some cost function to be devised. A typical procedure is to minimise the chi-squared function (between data and model).
+
+- Also want solution to be smooth, so introduce a Lagrange function which enforces this. A common procedure is to maximise the entropy of the image (using the flux distribution as the information). This has the benefit of requiring positive flux values.
+
+- So far we ignore noise in the image.
+
+
+PROBLEMS
+--------
+
+- Two problems emerge with this way of doing things: 1) often find image artefacts (from improper sampling, as we shall see); 2) it doesn't preserve the global intensity scale.
+
+- In practice, telescope cameras are constructed so that their data just satisfy the sampling theorem -- the pixel-spacing is ~2x the maximum frequency expected from objects. Upon deconvolution, where the fuzziness is taken out, the sampling theorem will be violated. Theoretically, deconvolution can introduce point-sources/Dirac-deltas (i.e. stars), so an infinitely small sampling interval would have to be used.
+
+- Deconvolution therefore leads to artefacts when there is a sharp discontinuity in the scene -- e.g. a star on a black background shows ringing. (Can think of this as a window in frequency space (i.e. a cutoff at some maximum frequency) leading to a sinc function in position-space: the result of deconvolving a point source will be delta*sinc.)
+
+- In traditional methods, riniging is mitigated by the positivity constraint, which damps down the lobes of oscillations. But this depends crucially on the zero-level, and accurate subtraction of sky noise is necessary for the methods to wrok well.
+
+- Image artefacts steal flux and bias photometry. Also, maximising entropy makes the image as smooth (uniform) as possible, which tends to spread out point sources; peak intensity is thus undersetimated.
+
+
+PROPOSAL
+--------
+
+- Do not do a full deconvolution: do a "light" deconvolution where point sources are given as extended objects of know size and flux distribution. These objects are chosen such that they satisfy the sampling theorems. In other words, reconstruct the image you would get if you had a better instrument (rather than a perfect instrument).
+
+- So now the image has a constant PSF, which M++ call r(x). This introduces a length scale over which the image must be smooth (?). This applies to point sources (which have shape r(x)) and extended sources. From the solution space of lightly-deconvolved scenes, we should choose the one which gives maximum smoothness on this local scale.
+
+- Specifically, for each pixel we take the difference of the "background" (everything which isn't delta) from the "reconstrcuted background" (the fixed PSF convolved with the scene); then sum over pixels and minimise (equation 7). This procedure discards high-frequecy information, but is consistent with the adopted sampling and the frequencies of r(x).
+
+- Artefacts not stealing flux AND no smoothing of point sources -> photometry possible.
+
+- Requires no positivity constraint.
+
+
+USAGE
+-----
+
+
+
+- Using simulated and real astronomical images, with finite resolution and noise, the new procedure is compared with other standard procedures and does (stupidly) well. They are able to recover fluxes and positions to high accuracy, and they avoid exacerbating noise / artefacts in the image.
+
+- Image combination is also demonstrated -- deconvolution of many images to the same PSF before combining them yields high-resolution final image.
+
+
+
+
+FURTHER WORK
+
+------------
+
+
+
+- Devise a more robust optimisation that finds minimum even in populated images.

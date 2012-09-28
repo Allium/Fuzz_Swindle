@@ -1,0 +1,25 @@
+
+
+## Create repository
+
+git init
+
+
+## Begin tracking files / stage files
+
+git add [files]
+
+
+## Commit version
+
+git commit -m 'memo'
+
+
+## Commit all tracked files without staging
+
+git commit -a -m 'memo'
+
+
+## Replace last commit with currently staged
+
+git commit --amend

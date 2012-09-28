@@ -1,0 +1,115 @@
+% This file is part of The Thresher.
+
+% to-do
+% -----
+% - figure out what to do
+% - do it
+% - write first draft
+% - make and insert figures
+
+\documentclass[12pt,preprint]{aastex}
+
+\newcounter{address}
+\setcounter{address}{0}
+\newcommand{\foreign}[1]{\textit{#1}}
+\newcommand{\etal}{\foreign{et~al.}}
+\newcommand{\project}[1]{\textsl{#1}}
+\newcommand{\TheThresher}{\project{The~Thresher}}
+\newcommand{\documentname}{\textsl{Article}}
+
+\newcommand{\given}{\,|\,}
+\newcommand{\transpose}[1]{{#1}^{\mathsf{T}}}
+
+\title{Non-negative priors or regularizations: Costs and benefits}
+\author{
+  David~W.~Hogg\altaffilmark{\ref{CCPP},\ref{MPIA},\ref{email}}
+  and others
+}
+
+\setcounter{address}{1}
+\altaffiltext{\theaddress}{\stepcounter{address}\label{CCPP} Center
+  for Cosmology and Particle Physics, Department of Physics, New York
+  University, 4 Washington Place, New York, NY 10003}
+\altaffiltext{\theaddress}{\stepcounter{address}\label{MPIA}
+  Max-Planck-Institut f\"ur Astronomie, K\"onigstuhl 17, D-69117
+  Heidelberg, Germany}
+\altaffiltext{\theaddress}{\stepcounter{address}\label{email} To whom
+  correspondence should be addressed: \texttt{david.hogg@nyu.edu}}
+
+\begin{abstract}
+Many processes in astronomy can be thought of as non-negative
+superpositions of non-negative components (think, for example, of
+stars and sky foreground summing to make a telescope image of a
+galaxy).  Inference of astrophysical phenomena can often therefore be
+performed with non-negative priors or priors that rule out all
+negative numbers in superpositions.  In, for example, a data-driven
+model of a spectrum with 2000 pixels, the non-negative prior cuts out
+all but $2^{-2000}$ of the \foreign{a priori} parameter space, so it
+is extremely informative and helpful for inference.  At the same time,
+non-negative priors ensure that uncertainties or noise---in the inputs
+or the outputs of the inference---cannot be Gaussian, so they
+explicitly invalidate chi-squared fitting or any other simple Gaussian
+approaches, including all the standard methods by which photometry
+(brightness measurement) is performed in imaging.  We give simple
+examples in which non-negative priors are clearly justified but lead
+to strongly biased point estimates.  These problems can all be
+overcome in fully probabilistic approaches to data analysis, but these
+involve passing forward probability distributions for everything in
+every stage of data analysis.  There are currently no practical
+proposals for performing these kinds of analyses for typical
+astrophysical data sets.
+\end{abstract}
+
+\begin{document}
+
+\noindent\textbf{[This document is a very early draft
+    dated 2012-05-25.  Please do not cite it
+    without the permission of the authors.]}
+
+Fake data:
+
+A set of N noisy images with different sky levels and PSFs.  Each
+image has two stars, one bright and one faint.
+
+Experiments:
+
+Estimate sky + scene for each image, with and without non-negative.
+Biases?
+
+Estimate PSF in each image, with and without non-negative.  Biases?
+
+Find scene + sky levels that explain all N images, with and without
+non-negative, with and without band limited.  Do with the correct true
+PSF.
+
+Do again with the estimated NN PSF.  Even more bias?
+
+Repeat the scene and sky estimation and PSF estimation with posterior
+PDF sampling.  What problems does this solve?  What problems does this
+introduce?
+
+\acknowledgements It is a pleasure to thank
+  Mike Blanton (NYU),
+  Adam Bolton (Utah),
+  Brendon Brewer (UCSB),
+  Dan Foreman-Mackey (NYU),
+  Stefan Harmeling (T\"ubingen),
+  Michael Hirsch (UCL),
+  Dustin Lang (CMU),
+  Phil Marshall (Oxford), and
+  Bernhard Sch\"olkopf (T\"ubingen)
+for contributions and comments.  DWH was partially
+supported by NASA (grant NNX12AI50G) and the NSF (grant
+IIS-1124794).  This project made use of the NASA \project{Astrophysics
+  Data System}, and code in the the \project{numpy}, \project{scipy},
+and \project{matplotlib} open-source projects.  All the code used in
+this paper is available at [URL HERE].
+
+\begin{thebibliography}{70}
+\bibitem[Hirsch \etal(2011)]{hirsch}
+Hirsch,~M., Harmeling,~S., Sra,~S., Sch\"olkopf,~B., 2011, \aap, 531, A9
+\bibitem[Magain \etal(1998)]{magain}
+Magain,~P., Courbin,~F., Sohy,~S., 1998, \apj, 494, 472 
+\end{thebibliography}
+
+\end{document}

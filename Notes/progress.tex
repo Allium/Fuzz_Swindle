@@ -1,0 +1,170 @@
+\documentclass[letterpaper, 11pt]{article}
+
+
+%=================================================
+
+\usepackage{fullpage, parskip}
+\usepackage{fancyhdr}	%% Header and footer
+\usepackage{amsmath, mathtools}
+\usepackage{amssymb}	%% mathbb, \ll
+\usepackage{gensymb, upgreek}
+\usepackage[breaklinks,backref,bookmarks=true]{hyperref}
+\usepackage{enumitem}	%% Resume numbering in enumerate
+\usepackage{url}
+\usepackage{graphicx, caption}
+\usepackage{wrapfig}
+\usepackage[leftcaption]{sidecap}
+\usepackage[center]{subfigure}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{xspace}	%% Guesses whether to put space after command
+\usepackage{pdfpages}
+%\usepackage{listings} %% Include source code
+%--------------------------------------------------
+%% Header and Footer
+\pagestyle{fancy}
+\fancyhead{}
+\renewcommand{\headrulewidth}{0.0pt}
+\rfoot{Cato Sandford}
+\lfoot{Summer 2012}
+%%--------------------------------------------------
+%% Language macros
+\def\th{\textsuperscript{th}\xspace}
+%%--------------------------------------------------
+%% Editing Macros
+\def\wspace{\textcolor{white}{Lorem ipsum}}
+\def\TODO#1{ {\color{red}{\bf TODO: {#1}}}\xspace}
+\def\MORE{{\color{red}{\bf MORE}}\xspace}
+\def\REF{{\color{OliveGreen}{\bf REF}}\xspace}
+%%=================================================
+
+
+%% Top matter
+\title{Progress Report\\}
+\author{Cato Sandford\thanks{Department of Physics, New York University, USA; \texttt{cato@nyu.edu}}}
+\date{\today}
+
+%%-------------------------------------------------
+
+\begin{document}
+
+
+
+Status report, \today.
+
+\section{Deconvolution}
+
+
+\underline{Objective:} generate an image with a constant, symmetrical PSF. \\(For now, we stay well away from violating the sampling theorem.)
+
+\underline{Summary of procedure:}
+
+\begin{enumerate}
+	\item Identify the sources in a catalogue of FITS images using SExtractor.
+		\begin{itemize}
+			\item SExtractor reads in a FITS image and catalogues all the astronomical sources it contains.
+			\item My code automates this by generating catalogues of an entire directory of images, using some special settings.
+			\item These default settings are (mostly) in the files \texttt{prepsfex.sex} (governs how the program runs) and \texttt{prepsex.param} (governs what information about the sources is recorded in the output file).
+			\item The program outputs a file with extension \texttt{.cat} (by default, if the image is called \texttt{image.fits}, the output will be \texttt{image.cat}). This contains information like the position, elongation and flux of the source.
+		\end{itemize}
+	\item Find the images' PSFs using PSFEx.
+		\begin{itemize}
+			\item PSFEx uses the \texttt{.cat} file from SExtractor, and estimates the PSF in the image.
+			\item There are a considerable number of options for how this estimation is done and what form the outputs take. After flirting with some of the more sophisticated options, it turns out that the key thing for my purpose is an integrated image of the average PSF for the image. This is saved as FITS.
+			\item I have automated the PSFEx step to process all the image catalogues in a directory with some default settings imposed (these are kept in \texttt{default.psfex}).
+		\end{itemize}
+	\item Use these ``true'' PSFs to generate ``ideal'' (Gaussian) PSFs.
+		\begin{itemize}
+			\item We wish to deconvolve the image such that it has a constant, symmetrical PSF of finite width.
+			\item My code reads in the FITS file containing the PSF; it calculates the total flux, and the width of the PSF in the $y$ and $x$ directions. Then it generates the image of a 2D Gaussian which shares these properties. This is the ``ideal'' PSF.
+		\end{itemize}
+	\item Find the convolution kernels which map between these two versions of the PSF.
+		\begin{itemize}
+			\item In order to deconvolve the entire image to this ``ideal'' PSF, we must find an object which, when convolved with the ``true'' PSF gives the ``ideal'' one. This object is the convolution kernel, which is we retrieve by casting the deconvolution procedure as a linear algebra problem.
+		\end{itemize}
+	\item Apply this kernel to the entire image to achieve a constant, known PSF.
+\end{enumerate}
+
+\underline{To do:}
+\begin{itemize}
+	\item Establish a system for documenting everything better -- captions and pseudocode \&c.
+\end{itemize}
+
+
+\subsection*{Noise Properties}
+
+
+Here I've applied a few different stretches to the original image and to the deconvolved image. The left-hand side images are all stretched originals and the right-hand side are all stretched deconvolutions. The stertch gets more sever as you go down.
+
+
+Specific notes:\\
+* I used a 9x9 kernel for these images.\\
+* To change the strength of the stretch, I simply divided the upper bound (you called it "vmax") by 2 and 10.\\
+
+\includepdf[pages={1,2}]{../Data/Deconvolved/CFHTLS_03_g_Deconvolved_noisecompare.pdf}
+
+
+
+
+\section{Colour composition}
+
+\underline{Objective:} combine images from three band passes to make a colour composite image. Make use of algorithms (Lupton/Wherry stretches) which emphasise faint features while preventing bright objects from dominating.
+
+\underline{Summary of progress:}
+\begin{enumerate}
+	\item Translated (and improved?) the Wherry algorithm from IDL to Python (\texttt{wherry.py}). This is what it does:
+	\texttt{
+	\begin{enumerate}
+		\item RGB = [readin(R\_data),readin(G\_data),readin(B\_data)]		\#\# *\_data can be filename, array of data, or a channel instance
+		\item rescale(RGB, scalefactors)	\#\# multiply each band by a given number
+		\item rebin(RGB, xrebinfactor,yrebinfactor)		\#\# re-sample images
+		\item kill\_noise(RGB, cutoff)	\#\# sets all pixels below a threshold to 0
+		\item arsinh\_stretch(RGB, nonlinearity)
+		\begin{itemize}
+			\item rad = R\_array+G\_array+B\_array	\#\# collapse images onto each other
+			\item if rad[i,j]==0: rad[i,j]=1
+			\item factor = arsinh(nonlin*rad)/(nonlin*rad)
+			\item (R\_array,G\_array,B\_array) *= factor
+		\end{itemize}
+		\item if stauratetowhite==False: box\_scale(RGB)
+		\begin{itemize}
+			\item maxpixel[i,j] = max(R[i,j],G[i,j],B[i,j])	\#\# i.e. find the maximum pixel value of the three arrays
+			\item if maxpixel[i,j] < 1: maxpixel[i,j]=1
+			\item (R\_array,G\_array,B\_array) /= maxpixel
+			\item (Also translates origin of image if required)
+		\end{itemize}
+		\item overlay/underlay \#\# not entirely sure what these are for
+		\item scipy.misc.imsave(RGB)
+	\end{enumerate}
+	}
+	\begin{itemize}
+		\item Note: when treating \texttt{wherry.py} as a standalone code for making composite images, the user can choose which bands to use for R, G and B.
+		\item Also, in the IDL version of the code, there is a function devoted to transforming the image data into bytes. When I was translating to Python, I decided that this was an IDL-specific step, and it was unnecessary to implement it as Python does it automatically / there is a way around. Perhaps I didn't fully understand the IDL.
+	\end{itemize}
+	\item Integrated with PJM's HumVI code, so that choice of Lupton/Wherry procedure is an option.
+	\begin{itemize}
+		\item Lupton is default. Wherry requires command-line keyword \texttt{--wherry} or simply \texttt{-w}.
+		\item Again, the user can choose which bands to use for R, G and B -- it just depends on the order of the three filenames.
+		\begin{itemize}
+			\item After some initial misunderstanding, I now use R=i, G=r, B=g.
+		\end{itemize}
+		\item Of course, this bands$\rightarrow$colour map is unchanged when when \texttt{--wherry} is specified.
+	\end{itemize}
+\end{enumerate}
+
+\underline{To do:}
+\begin{itemize}
+	\item Noise higher when using arrays than when using channels -- investigate.
+\end{itemize}
+
+\section{Combining the two strands}
+
+The deconvolution and colour composition procedures are not integrated into a pipeline. There are some small challenges in integrating them, but it shouldn't be too difficult. The main danger is that the code becomes too cumbersome and dependent on my directory structure.
+
+\section{Notes}
+
+\begin{itemize}
+	\item Nothing is checked in to Github.
+\end{itemize}
+
+
+\end{document}
