@@ -34,6 +34,8 @@
 \lfoot{Summer 2012}
 %%--------------------------------------------------
 \def\kB{\ensuremath{k_{\rm B}}\xspace}
+\def\psfobs{\ensuremath{\rm PSF_{obs}}\xspace}
+\def\psfref{\ensuremath{\rm PSF_{ref}}\xspace}
 %%--------------------------------------------------
 %% Language macros
 \def\etc{{\&c.}\xspace}	% Not italicised
@@ -119,21 +121,21 @@ As mentioned in the introduction, it is frequently possible and indeed desirable
 
 \begin{enumerate}
 	\item Identify the astronomical sources in a FITS image.
-	\item Find the point sources, and from these estimate the PSF of the image.\label{pnt:getpsf}
-	\item Generate an idealised, symmetrical PSF for the image, using the dimensions and flux properties of the image PSF of point~\ref{pnt:getpsf}.\label{pnt:PSF0}
-	\item Create an object which maps the image PSF to the ideal PSF. This object is called the ``kernel'' and the mapping procedure is convolution.
+	\item Find the point sources, and from these estimate the PSF of the image. We call this the ``observed PSF'', or \psfobs.\label{pnt:getpsf}
+	\item Generate a symmetrical\footnote{Well, not actually circularly symmetric.} target PSF for the image, using the dimensions and flux properties of the image PSF of point~\ref{pnt:getpsf}. We call this the ``reference PSF'' or \psfref.\label{pnt:PSF0}
+	\item Create an object which maps the observed PSF to the reference PSF. This object is called the ``kernel'' and the mapping procedure is convolution.
 	\item Apply this procedure to the original image; this should correlate all the pixels in such a way as to rid the image of asymmetrical blurriness and replace it with a blurriness of known properties.
 \end{enumerate}
 
 The reader may be confused at this point as to why, if we can correctly calculate the PSF of an image, we don't simply do away with the blurriness altogether -- i.e. find a kernel which maps the PSF to a point. This would be a ``hard deconvolution'', a procedure which is compellingly discouraged by the work of \cite{MCS98} (see appendix~\ref{sec:MCS98notes} for more discussion of this paper). Following this work, we may endeavour to obtain better knowledge of the sky by reducing the PSF, but we must avoid inadvertently violating the sampling theorem, which would certainly happen if we attempted a hard deconvolution.
 
-Once we have made the PSF as small as possible within this restriction, we can enforce that it be symmetrical uniform throughout the whole image: this is a ``soft deconvolution''. The result of this will be that all point sources have the same pre-determined shape, and extended sources will be superpositions of this shape.
+Once we have made the target PSF as small as possible within this restriction, we can enforce that it be symmetrical uniform throughout the whole image: this is a ``soft deconvolution''. The result of this will be that all point sources have the same pre-determined shape, and extended sources will be superpositions of this shape.
 
-Mathematically, we can think of the measured PSF $t$ as being composed of an idealised/reference PSF $r$ convolved with a messy 2D function $K$:
+Mathematically, we can think of \psfobs as being composed of the reference PSF convolved with a messy 2D function $K$:
 \begin{align}
-	t(\vec x) = r(\vec x) \ast K(\vec x).
-	\intertext{In the following sections, we discuss how we determine the true PSF $t$, construct the reference PSF $r$, and find the convolution kernel $K$. Crucially for homogenising the image, we must also find the kernel $k$ which governs the inverse transformation, i.e.}
-	t(\vec x) \ast k(\vec x) = r(\vec x).
+	\psfobs(\vec x) = \psfref(\vec x) \ast K(\vec x).
+	\intertext{In the following sections, we discuss how we determine the observed PSF, construct the reference PSF, and find the convolution kernel $K$. Crucially for homogenising the image, we must also find the kernel $k$ which governs the inverse transformation, i.e.}
+	\psfobs(\vec x) \ast k(\vec x) = \psfref(\vec x).
 \end{align}
 
 
@@ -168,7 +170,7 @@ Mathematically, we can think of the measured PSF $t$ as being composed of an ide
 \label{sec:psfex}
 
 \begin{itemize}
-	\item Use PSFEx to compute PSF (arbitrary shape, noisy)
+	\item Use PSFEx to compute \psfobs (arbitrary shape, noisy)
 	\item How does it work? Use that graph in the docs.
 	\item What else does it measure / output?
 \end{itemize}
@@ -187,7 +189,7 @@ Mathematically, we can think of the measured PSF $t$ as being composed of an ide
 \subsection{Generating an Idealised PSF}
 
 \begin{itemize}
-	\item Find moments of PSFEx PSF (2D)
+	\item Find moments of PSFEx \psfobs (2D)
 	\item Find total flux
 	\item Size of PSF image
 	\item Plug into a 2D Gaussian 
@@ -204,17 +206,17 @@ Some comments on generating
 %%=================================================
 %% Kernel
 %%=================================================
-\subsection{Mapping to Ideal PSF}
+\subsection{Mapping to the Target PSF, \psfref}
 \label{sec:kernel}
 
 
 Find the convolution kernels which map between these two versions of the PSF.
 \begin{itemize}
-	\item In order to deconvolve the entire image to this ``ideal'' PSF, we must find an object which, when convolved with the ``true'' PSF gives the ``ideal'' one. This object is the convolution kernel, which is we retrieve by casting the deconvolution procedure as a linear algebra problem.
+	\item In order to deconvolve the entire image to the reference PSF, we must find an object which, when convolved with the \psfobs gives \psfref. This object is the convolution kernel, which is we retrieve by casting the deconvolution procedure as a linear algebra problem.
 \end{itemize}
 \wspace\newline\wspace\newline
 
-Say we have two similar images: $\mathcal{A}$, which is a picture taken by a real telescope, and $\mathcal{B}$ which is the same image but deconvolved to a constant, ideal PSF $r(\vec x)$. We need to deconvolve the image  $\mathcal{A}$ by some kernel $k$ in order to leave $\mathcal{B}$ with a clean PSF of $r(\vec x)$. Since convolution is a linear operation, we can cast our search for the convolution kernel in terms of a linear algebra problem. Specifically, we want to solve (for $\vec k$) an equation of the form
+Say we have two similar images: $\mathcal{A}$, which is a picture taken by a real telescope, and $\mathcal{B}$ which is the same image but deconvolved to a constant, ideal PSF $r(\vec x)$. We need to deconvolve the image  $\mathcal{A}$ by some kernel $k$ in order to leave $\mathcal{B}$ with a clean PSF of $\psfref(\vec x)$. Since convolution is a linear operation, we can cast our search for the convolution kernel in terms of a linear algebra problem. Specifically, we want to solve (for $\vec k$) an equation of the form
 \begin{equation}\label{eqn:vector}
 	\vec b = A \vec k,
 \end{equation}
@@ -251,7 +253,7 @@ DWH has argued semi-convincingly that we needn't make such a sacrifice in practi
 %%=================================================
 \subsection{Full Image Deconvolution}
 
-In section~\ref{sec:kernel} we found the kernel $k$ which would transform a messy PSF image into a nice symmetrical one with known properties. This same kernel can be used to transform an entire image with the messy PSF, $\mathcal C$, into the same image\footnote{Modulo concerns raised in section~\ref{sec:shave}.} with a nice PSF, $\mathcal D$. To do this, we must perform the operation
+In section~\ref{sec:kernel} we found the kernel $k$ which would transform a messy PSF image into a nice symmetrical one with known properties (\psfobs $\rightarrow$ \psfref.). This same kernel can be used to transform an entire image with the observed PSF, $\mathcal C$, into the same image\footnote{Modulo concerns raised in section~\ref{sec:shave}.} with the target PSF, $\mathcal D$. To do this, we must perform the operation
 \begin{align}
 	\mathcal{D} = k \ast \mathcal{C},
 	\shortintertext{or, in the language of linear algebra,}
@@ -259,7 +261,7 @@ In section~\ref{sec:kernel} we found the kernel $k$ which would transform a mess
 \end{align}
 The image vectors $\vec d$ and $\vec c$ have the same form as discussed earlier -- they are simply flattened versions of the pixel-arrays. The kernel matrix $\uuline K$ is more tricky; but after some refelxion, it transpires that $\uuline K$ is a sparse, upper-diagonal matrix where every row is identical, but shifted right by one element with respect to the row above. (Note that in practice it is unweildy and prohibitively expensive to store all the zero-entries of the $\uuline K$ matrix -- we have to be a little bit clever about how to store and manipulate the relevant information.)
 
-Once we have constructed an appropriate kernel matrix and multiplied it by the (messy-PSF) image vector, we are done.
+Once we have constructed an appropriate kernel matrix and multiplied it by the (observed) image vector, we are done.
 
 Alternatively, we can simply use a pre-existing module which performs the convolution for us: \texttt{scipy.signal.fftconvolve} does the job nicely. We can even tell this module to reduce the size of the convolved image (\texttt{mode="valid"}).
 
@@ -410,6 +412,16 @@ A summary of this part of the project (with pseudocode) follows.
 
 
 
+
+%%=================================================
+%% UNMBRELLA
+%%=================================================
+\section{Combined Deconvolution and Colour}
+
+Mag++98 -- must deconvolve all bands to target PSF before combining.
+
+
+
 %%=================================================
 %% TO DO
 %%=================================================
@@ -417,13 +429,13 @@ A summary of this part of the project (with pseudocode) follows.
 
 \underline{Document}
 \begin{itemize}
-	\item Use ``target'' PSF rather than ``ideal''. ``Observed'' rather than ``true''.
+	\item 
 \end{itemize}
 
 
 \underline{Plots}
 \begin{itemize}
-	\item Invert plots to save ink!
+	\item Invert figure colours to save ink!\\[Latex can't do this; will have to make them myself.]
 \end{itemize}
 
 \underline{Colour}
@@ -440,7 +452,7 @@ A summary of this part of the project (with pseudocode) follows.
 	\item Treat all three bands of a certain image with the same kernel -- should be the most conservative.
 	\item User-specified PSF width. Keep total flux.
 	\item Homogenise PSF across different fields. \TODO{What is the best way to do this?} Use largest PSF $\rightarrow$ no danger of violating sampling theorem; but this may be way too blurry to be useful. Pickle.
-	\item PSFEx failure modes.
+	\item PSFEx failure modes -- see Phil's e-mail.
 	\item Output FITS
 \end{itemize}
 
