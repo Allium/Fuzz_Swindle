@@ -1,6 +1,5 @@
-# Default configuration file for PSFEx 3.9.0
-# EB 2010-10-10
-#
+## Default configuration file for PSFEx
+
  
 #-------------------------------- PSF model ----------------------------------
  
@@ -46,7 +45,7 @@ CHECKIMAGE_NAME chi.fits,proto.fits,samp.fits,resi.fits,snap.fits,moffat.fits,su
  
 PSF_DIR                         # Where to write PSFs (empty=same as input)
 PSF_SUFFIX      .psf            # Filename extension for output PSF filename
-VERBOSE_TYPE    NORMAL          # can be QUIET,NORMAL,LOG or FULL
+VERBOSE_TYPE    QUIET          # can be QUIET,NORMAL,LOG or FULL
 
 WRITE_XML       Y               # Write XML file (Y/N)?
 XML_NAME        psfex.xml       # Filename for XML output
@@ -60,6 +59,6 @@ NTHREADS        0               # Number of simultaneous threads for
 
 HOMOBASIS_NUMBER	10
 HOMOBASIS_SCALE		1.0
-HOMOBASIS_TYPE		GAUSS-LAGUERRE
+HOMOBASIS_TYPE		NONE	##GAUSS-LAGUERRE
 HOMOKERNEL_SUFFIX	.homo.fits
 HOMOPSF_PARAMS		2.0,3.0

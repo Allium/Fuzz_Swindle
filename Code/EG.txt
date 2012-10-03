@@ -21,7 +21,7 @@ py ImageScript.py brighten
 
 
 
-## Manual use of PSFEx to do snapall
+## Manual use of PSFEx to do snap
 
 psfex /home/users2/cs3006/Dropbox/Hogg_2012/Data/CFHTLS_30/CFHTLS_30_g/CFHTLS_30_g_sci.cat  -CHECKIMAGE_TYPE SNAPSHOTS  -CHECKIMAGE_NAME /home/users2/cs3006/Dropbox/Hogg_2012/Data/CFHTLS_30/CFHTLS_30_g/CFHTLS_30_g_sci_Diagnostics/snap_n1_d0_CFHTLS_30_g_sci.fits  -PSFVAR_NSNAP 1  -PSFVAR_DEGREES 0   -CHECKPLOT_TYPE NONE  -WRITE_XML N 
 
@@ -126,6 +126,7 @@ gallery.pl\
 
 
 
+find ./* ! -name "*CFHTLS_*sci.fits" -type f -delete
 
 
 

@@ -15,9 +15,10 @@
 \usepackage{enumitem}	%% Resume numbering in enumerate
 %\usepackage{varioref}	%% \vref -- says where target is
 \usepackage{url}
-\usepackage{graphicx, caption}
-%\usepackage{wrapfig}
+\usepackage{graphicx}
+%\usepackage{caption}
 \usepackage{subcaption}
+\captionsetup{compatibility=false}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage{pdfpages}
 \usepackage{xspace}	%% Guesses whether to put space after command
@@ -34,8 +35,8 @@
 \lfoot{Summer 2012}
 %%--------------------------------------------------
 \def\kB{\ensuremath{k_{\rm B}}\xspace}
-\def\psfobs{\ensuremath{\rm PSF_{obs}}\xspace}
-\def\psfref{\ensuremath{\rm PSF_{ref}}\xspace}
+\def\psfobs{\ensuremath{{\rm PSF_{obs}}}\xspace}
+\def\psfref{\ensuremath{{\rm PSF_{ref}}}\xspace}
 %%--------------------------------------------------
 %% Language macros
 \def\etc{{\&c.}\xspace}	% Not italicised
@@ -395,12 +396,12 @@ A summary of this part of the project (with pseudocode) follows.
 	\end{itemize}
 	\item Integrated with PJM's HumVI code, so that choice of Lupton/Wherry procedure is an option.
 	\begin{itemize}
-		\item Lupton is default. Wherry requires command-line keyword \texttt{--wherry} or simply \texttt{-w}.
+		\item Wherry is default. Luption can be invoked with command-line keyword \texttt{--lupton} or simply \texttt{-l}.
 		\item Again, the user can choose which bands to use for R, G and B -- it just depends on the order of the three filenames.
 		\begin{itemize}
 			\item After some initial misunderstanding, I now use R=i, G=r, B=g.
 		\end{itemize}
-		\item Of course, this bands$\rightarrow$colour map is unchanged when when \texttt{--wherry} is specified.
+		\item Of course, this bands$\rightarrow$colour map is unchanged when when \texttt{--lupton} is specified.
 	\end{itemize}
 \end{enumerate}
 
@@ -435,30 +436,28 @@ Mag++98 -- must deconvolve all bands to target PSF before combining.
 
 \underline{Plots}
 \begin{itemize}
-	\item Invert figure colours to save ink!\\[Latex can't do this; will have to make them myself.]
+	\item Invert figure colours to save ink!\newline
+	[Latex can't do this, I'll have to make them myself.]
 \end{itemize}
 
 \underline{Colour}
 \begin{itemize}
 	\item Make some side-by-side composites showing Wherry and Lupton
-	\item Wherry shold be default
-	\item Rename fits2colorjpg as compose.py
-	\item Scales should be input ourselves
+	\item Fail to compute scales $\rightarrow$ error
 \end{itemize}
 
 \underline{Deconvolution}
 \begin{itemize}
 	\item Use larger kernels
-	\item Treat all three bands of a certain image with the same kernel -- should be the most conservative.
+	\item Treat all three bands of a certain image with the same kernel -- should be the most conservative?
 	\item User-specified PSF width. Keep total flux.
 	\item Homogenise PSF across different fields. \TODO{What is the best way to do this?} Use largest PSF $\rightarrow$ no danger of violating sampling theorem; but this may be way too blurry to be useful. Pickle.
 	\item PSFEx failure modes -- see Phil's e-mail.
-	\item Output FITS
 \end{itemize}
 
 \underline{Combining C\&D}
 \begin{itemize}
-	\item Make pipeline for deconvolution to common $r(x)$ then combination. (The deconvolution and colour composition procedures are not integrated into a pipeline. There are some small challenges in integrating them, but it shouldn't be too difficult. The main danger is that the code becomes too cumbersome and dependent on my directory structure.)
+	\item Make pipeline for deconvolution to common \psfref then combination. (The deconvolution and colour composition procedures are not integrated into a pipeline. There are some small challenges in integrating them, but it shouldn't be too difficult. The main danger is that the code becomes too cumbersome and dependent on my directory structure.)
 \end{itemize}
 
 \underline{Maths}
@@ -474,10 +473,12 @@ that propagates through into new matrix operations.'
 \end{itemize}
 
 
+
+
+\newpage
 %%=================================================
 %% APPENDIX
 %%=================================================
-\newpage
 \appendix
 \addcontentsline{toc}{section}{Appendix}
 \section*{APPENDIX}

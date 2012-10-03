@@ -1,18 +1,6 @@
 #!/usr/bin/env/python
 ##============================================================
 
-"""
-Inputs:
--------
-1. Mode selection:
-	a psf
-	b kern
-	c imdec
-2b. Kernel size, e.g. [5,5]
-2c. Image file
-3c. Kernel file
-"""
-
 ##============================================================
 
 import numpy
@@ -21,9 +9,11 @@ import os
 import pyfits
 import Image
 import time
+import getopt
 from scipy.signal import fftconvolve as convolve
-from ImageScript import linear_rescale, stretch_params
-from ImageScript import fits_pix, png_pix, pngcropwhite, writearray
+from ImageMethods import linear_rescale, stretch_params,\
+												 fits_pix, png_pix, pngcropwhite, writearray,\
+												 makeFITS
 from OSScript import file_seek
 from common import lineno
 from sys import argv
@@ -35,17 +25,15 @@ from common import cutoff
 
 ##============================================================
 ##============================================================
-## Decide on program function.
-## argv[1] is option, after that is parameters
 
 def main(argv):
-"""
+	"""
 	NAME
-	  PSF_Generator.py
+	  DeconvolveToTargetPSF.py
 
 	PURPOSE
-		1. Uses a PSF image to construct an "ideal" 2D Gaussian PSF
-		2. Finds convolution kernel which maps between the "true" and "ideal" PSFs
+		1. Uses a PSF image to construct a target 2D Gaussian PSF
+		2. Finds convolution kernel which maps between the observed and target PSFs
 		3. Deconvolves an entire image with this kernel
 
 	COMMENTS
@@ -53,7 +41,7 @@ def main(argv):
 		f=sqrt(2ln2)*s.
 	  
 	USAGE
-		python PSF_Generator.py [flags] function args
+		python DeconvolveToTargetPSF.py [flags] function args
 	
 	FUNCTION
 		1. psf
@@ -79,11 +67,13 @@ def main(argv):
 	  stdout        Useful information
 
 	EXAMPLES
-		
+		NEED EXAMPLES
 	                    
 	BUGS
 		- There is some disagreement between my convolution method and SciPy's.
 		- Can't save directly to PNG in GPSF() -- save as FITS then convert.
+		
+		- Use flags rather than relying on argv
 
 	HISTORY
 	  2012-06-12 started Sandford (NYU)
@@ -93,7 +83,7 @@ def main(argv):
 	## Options and help-string
 	
 	try:
-		opts, args = getopt.getopt(argv, "h",["help"])
+		opts, args = getopt.getopt(argv, "hvpk:d:",["help","psf","kern","imdec"])
 	except getopt.GetoptError, err:
 		## Print help information and exit:
 		print str(err)
@@ -105,7 +95,19 @@ def main(argv):
 		if o in ("-h", "--help"):
 			print main.__doc__
 			return
-			
+		elif o is "-v":
+			vb=True
+		else:
+			assert False, "Unhandled option"
+	  
+		"""
+		elif o in ("-p", "--psf"):
+			GPSF()	### Should have arguments!
+		elif o in ("-k", "--kern"):
+			all_kernels()	###
+		elif o in ("-d", "--imdec"):
+		###
+		"""	  
 	## -------------------------------------------------------------------
 	
 	t_init = time.time()
@@ -131,8 +133,8 @@ def main(argv):
 ##============================================================
 
 ## Copy all the psf models in directory to Gaussians
-def all_psfs(junk):	
-	for fitsfile in file_seek("../Data/PSFs/","snap_*.fits"):
+def all_psfs(topdir="~/Dropbox/Hogg_2012/Data/PSFs/", filestring="snap_*.fits"):	
+	for fitsfile in file_seek(topdir, filestring):
 		GPSF(fitsfile)
 	return
 
@@ -141,12 +143,8 @@ def all_psfs(junk):
 ## Create a Gaussian PSF like the original image
 
 def GPSF(filename):
-	print filename
 	## Get 2D Gaussian data
 	Gdat = Gauss_2D(*moments(fits_pix(filename)))
-	"""## Rescale to make things visible
-	smin,smax = stretch_params(Gdat)[0],stretch_params(Gdat)[1]
-	Gdat = linear_rescale(Gdat, smin,smax)"""
 	##		Horrible method: write fits then convert to png
 	if os.path.exists("temp.fits"): os.remove("temp.fits")
 	hdu = pyfits.PrimaryHDU(Gdat)
@@ -158,7 +156,7 @@ def GPSF(filename):
 		outfile = os.path.splitext(filename)[0]+"_Gauss.png"
 		os.system("ds9 temp.fits -colorbar no -minmax -saveimage png "+outfile+" -exit")
 	os.remove("temp.fits")
-	return
+	return Gdat
 	
 ##============================================================
 ## From data, extract parameters needed to make a naive Gaussian fit
@@ -167,7 +165,7 @@ def GPSF(filename):
 def moments(data):
 	dim = data.shape
 	L = max(dim)
-	if dim[0]!=dim[1]: print "PSF_Generator.py: moments: image not square. Continuing."
+	if dim[0]!=dim[1]: print "DeconvolveToTargetPSF.py: moments: image not square. Continuing."
 	total = data.sum()
 	X,Y = numpy.indices(dim)
 	m_x = (X*data).sum()/total
@@ -206,7 +204,7 @@ def Gauss_2D(size, w_x, w_y, x0, y0, scale=1.0):
 
 
 ## Once all GPSFs are calulated, work out kernels to and from
-def all_kernels(kdim, writefile=True,makeimage=False):
+def all_kernels(kdim, writefile=True,makeimage=False, vb=False):
 		
 	## Get files
 	allpngs = numpy.sort(file_seek("../Data/GPSF/","snap*d0_CFHTLS_03_g*.png"))
@@ -235,14 +233,14 @@ def all_kernels(kdim, writefile=True,makeimage=False):
 		f=open(outfile,"w")
 		f.write("## Convolution kernel taking 2D Gaussian to PSFEx image\n\n\n")
 		writearray(f,A,True)
-		print "PSF_Generator: kernel written to",outfile
+		if vb: print "DeconvolveToTargetPSF.py: kernel written to",outfile
 		
 		## PSF to Gaussian		
 		outfile=os.path.splitext(allpngs[i])[0][:-4]+"_PSFtoGauss_"+str(B.shape[0])+".krn"
 		f=open(outfile,"w")
 		f.write("## Convolution kernel taking PSFEx image to 2D Gaussian\n\n\n")
 		writearray(f,B,True)
-		print "PSF_Generator: kernel written to",outfile
+		if vb: print "DeconvolveToTargetPSF.py: kernel written to",outfile
 		
 		print "\n"
 
@@ -255,17 +253,17 @@ def all_kernels(kdim, writefile=True,makeimage=False):
 ## Find convolution kernel whch maps image1 to image2 (both arrays)
 	## Kernel must be odd and should be square
 	## Some information from image2 gets shaved off
-def get_kernel(image1, image2, kernel_dim):
+def get_kernel(image1, image2, kernel_dim, vb=False):
 	
 ##------------------------------------------------------------		
 
 	## Enforce valid kernel shape
 	if kernel_dim[1]!=kernel_dim[0]:
 		kernel_dim[1] = kernel_dim[0]
-		print "PSF_Generator.py: get_kernel: oblong kernel. Using",kernel_dim,"instead."
+		if vb: print "DeconvolveToTargetPSF.py: get_kernel: oblong kernel. Using",kernel_dim,"instead."
 	if kernel_dim[0]%2==0:
 		kernel_dim = [x-1 for x in kernel_dim]	## Unnecessarily Pythonic
-		print "PSF_Generator.py: get_kernel: even kernel. Using",kernel_dim,"instead."
+		if vb: print "DeconvolveToTargetPSF.py: get_kernel: even kernel. Using",kernel_dim,"instead."
 	
 ##------------------------------------------------------------		
 		
@@ -279,7 +277,7 @@ def get_kernel(image1, image2, kernel_dim):
 	t0=time.time()	
 	## Compute kernel
 	kernel = LSsolve(orig,proc)
-	print "PSF_Generator: get_kernel: kernel computation took",round(time.time()-t0,2),"seconds."
+	if vb: print "DeconvolveToTargetPSF.py: get_kernel: kernel computation took",round(time.time()-t0,2),"seconds."
 	
 	## Normalise and shape
 	kernel[kernel<cutoff] = 0.0
@@ -414,10 +412,10 @@ Using the kernels for transforming PSF to Gaussian, deconvolve an entire image t
 
 ##============================================================
 
-def deconvolve_image(imagefile, kernelfile):
+def deconvolve_image(imagefile, kernel, vb=False):
 	
 ##------------------------------------------------------------
-	## Read in image and kernel
+	## Read in image
 	
 	## Determine image file type and get pixels
 	imgext = os.path.splitext(imagefile)[1]
@@ -429,13 +427,22 @@ def deconvolve_image(imagefile, kernelfile):
 	
 	## Filter out noise
 	imgarr[imgarr<cutoff] = 0.0
-		
-	## Ensure the right kernel file has been selected
-	if "PSFtoGauss" in kernelfile:
-		kernel = numpy.loadtxt(kernelfile)
-	else:
-		print "PSF_Generator.py: deconvolve_image: wrong kernel file."
-		return
+
+##------------------------------------------------------------
+	## Read in kernel
+	
+	## Distinguish between array-kernel and file-kernel
+	if type(kernel) is str:	
+		## Ensure the right kernel file has been selected
+		if "PSFtoGauss" in kernel:
+			kernel = numpy.loadtxt(kernel)
+		else:
+			print "DeconvolveToTargetPSF.py: deconvolve_image: wrong kernel file. Abort."
+			return
+	elif type(kernel) is numpy.array:
+		pass
+	
+	## Kernel dimensions
 	kernel_h,kernel_w = kernel.shape
 		
 	# Should also check match with imagefile #
@@ -477,7 +484,7 @@ def deconvolve_image(imagefile, kernelfile):
 		for i in range (scene_siz):
 			imageslice = imgarr[i:i+len_krn_lin]
 			g_sc[i] = numpy.dot(krn_lin,imageslice)
-		print "PSF_Generator.py: deconvolve_image: vector multiplication took",\
+		if vb: print "DeconvolveToTargetPSF.py: deconvolve_image: vector multiplication took",\
 					round(time.time()-t0,2),"seconds."
 		
 		## Delete spurious elements (from overlapping)
@@ -498,7 +505,7 @@ def deconvolve_image(imagefile, kernelfile):
 		## Do convolution using scipy
 		imgarr = numpy.array(imgarr, dtype="float64")
 		g_sc = convolve(imgarr, kernel, mode="valid")
-		print "PSF_Generator.py: deconvolve_image: SciPy convolution took",\
+		if vb: print "DeconvolveToTargetPSF.py: deconvolve_image: SciPy convolution took",\
 					round(time.time()-t0,2),"seconds."
 		
 	else:
@@ -509,18 +516,11 @@ def deconvolve_image(imagefile, kernelfile):
 	
 	## Reshape
 	if g_sc.shape[0]!=scene_dim[0] or g_sc.shape[1]!=scene_dim[1]:
-		print "PSF_Generator.py: deconvolve_image: reshaping."
+		if vb: print "DeconvolveToTargetPSF.py: deconvolve_image: reshaping."
 		try:
-			"""
-			## Manual reshape
-			new = numpy.empty(scene_dim)
-			for i in range (len(g_sc)/scene_dim[0]):
-				new[i,:] = g_sc[i*scene_dim[0]:(i+1)*scene_dim[0]]
-			g_sc = new
-			del(new)"""
 			g_sc = g_sc.reshape(scene_dim)
 		except ValueError:	
-			print "PSF_Generator.py: deconvolve_image: output has wrong shape. Investigate."
+			print "DeconvolveToTargetPSF.py: deconvolve_image: output has wrong shape. Investigate."
 
 ##------------------------------------------------------------
 	
@@ -528,76 +528,33 @@ def deconvolve_image(imagefile, kernelfile):
 	g_sc[g_sc<cutoff] = 0.0
 	
 	## Outfile name
-	imagename = os.path.basename(imagefile)
+	imagedir,imagename = os.path.split(imagefile)
 	info = imagename[imagename.find("CFHT"):imagename.find("sci")+3]
-	outfile = "../Data/Deconvolved/gsc_"+info+".png"
+	outfile = imagedir+"/gDeconvolved_"+info
 	
-	## Rescale
+	## Rescale (linear stretch)
 	if 1:
 		## Scaling parameters
 		vmin,vmax = stretch_params(g_sc)
 		## Stretch
-		g_sc = linear_rescale(g_sc, vmin, vmax*0.5)
+		g_sc = linear_rescale(g_sc, vmin, vmax)
 		## Modify filename
-		outfile = outfile[:-4]+"_rescaledl.png"
+		outfile = outfile+"_rescaled"
 	
-	## Save image
-	scipy.misc.imsave(outfile,g_sc)
-	print "PSF_Generator.py: deconvolve_image: image saved to",outfile
+	## Delete pre-existing images
+	if os.path.isfile(outfile+".fits"): os.remove(outfile+".fits")
+	if os.path.isfile(outfile+".png"):  os.remove(outfile+".png")
+	
+	## Save image as FITS and as PNG
+	makeFITS(outfile+".fits", g_sc)
+	scipy.misc.imsave(outfile+".png", g_sc)
+	if vb: print "DeconvolveToTargetPSF.py: deconvolve_image: image saved to",outfile+".fits"
 	
 	return None
 	
 	
 	
 ##============================================================	
-"""
-##============================================================
-## Generate linear-algebra convolution kernel from kernel image
-	#	krn_mat = kernel_matrix(kernel, imgarr.shape, len(g_sc))
-	## Note this is memory-inefficient: result is sparse, upper-triangular
-	## matrix, but I store all elements.
-	## Actually, this turns out to be prohibitively inefficient
-def kernel_matrix(kernel, image_shape, scene_length):
-	
-	## Dimensions
-	stride = image_shape[0]
-	image_length = image_shape[0]*image_shape[1]
-	kernel_h,kernel_w = kernel.shape
-	
-	## Initialise kernel matrix: image_length columns
-		## Should have scene_length rows, but overassign for now
-	print image_length, scene_length
-	krn_mat = numpy.zeros([scene_length, image_length])
-	
-	## Stretch out kernel image; we plug this straight into the kernel matrix
-	len_krn_lin = (stride+1)*(kernel_h-1)+1
-	krn_lin = numpy.zeros(len_krn_lin)
-	## Loop over slices in the kernel image
-	for j in range (kernel_h):
-		startcol = j*stride
-		krn_lin[startcol:startcol+kernel_w] = kernel[j,:]
-	
-	## Loop over rows in the kernel matrix
-	for i in range (image_length):
-		try:
-			if i%stride+kernel_w <= stride:
-				krn_mat[i,i:i+len_krn_lin] = krn_lin
-		except ValueError:	## Invoked when end is reached
-			print "PSF_Generator: kernel_matrix: reached end at row",i
-			break
-	
-	## Delete all rows which sum to zero
-	krn_mat = krn_mat[krn_mat.sum(1)!=0]
-	## Make sure the kernel matrix has the right number of rows
-	if krn_mat.shape[0]!=scene_length:
-		print "PSF_Generator: kernel_matrix: result is nonconformable matrix."
-		
-	return krn_mat
-"""
-
-
-
-
 ##============================================================
 if __name__=="__main__":
 	main(argv)
