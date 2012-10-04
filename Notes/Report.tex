@@ -374,8 +374,8 @@ A summary of this part of the project (with pseudocode) follows.
 		\item kill\_noise(RGB, cutoff)	\#\# sets all pixels below a threshold to 0
 		\item arsinh\_stretch(RGB, nonlinearity)
 		\begin{itemize}
-			\item rad = R\_array+G\_array+B\_array	\#\# collapse images onto each other
-			\item if rad[i,j]==0: rad[i,j]=1
+			\item pixtot = R\_array+G\_array+B\_array	\#\# collapse images onto each other
+			\item if pixtot[i,j]==0: pixtot[i,j]=1
 			\item factor = arsinh(nonlin*rad)/(nonlin*rad)
 			\item (R\_array,G\_array,B\_array) *= factor
 		\end{itemize}
@@ -392,7 +392,7 @@ A summary of this part of the project (with pseudocode) follows.
 	}
 	\begin{itemize}
 		\item Note: when treating \texttt{wherry.py} as a standalone code for making composite images, the user can choose which bands to use for R, G and B.
-		\item Also, in the IDL version of the code, there is a function devoted to transforming the image data into bytes. When I was translating to Python, I decided that this was an IDL-specific step, and it was unnecessary to implement it as Python does it automatically / there is a way around. Perhaps I didn't fully understand the IDL.
+		\item Also, in the IDL version of the code, there is a function devoted to transforming the image data into bytes. When I was translating to Python, I found that this was an unnecessary IDL-specific step, and it was unnecessary to implement it.
 	\end{itemize}
 	\item Integrated with PJM's HumVI code, so that choice of Lupton/Wherry procedure is an option.
 	\begin{itemize}
@@ -422,19 +422,13 @@ A summary of this part of the project (with pseudocode) follows.
 Mag++98 -- must deconvolve all bands to target PSF before combining.
 
 
-
+\newpage
 %%=================================================
 %% TO DO
 %%=================================================
 \section{To do}
 
 \underline{Document}
-\begin{itemize}
-	\item 
-\end{itemize}
-
-
-\underline{Plots}
 \begin{itemize}
 	\item Invert figure colours to save ink!\newline
 	[Latex can't do this, I'll have to make them myself.]
@@ -444,6 +438,7 @@ Mag++98 -- must deconvolve all bands to target PSF before combining.
 \begin{itemize}
 	\item Make some side-by-side composites showing Wherry and Lupton
 	\item Fail to compute scales $\rightarrow$ error
+	\item Should work with one or two FITS images.
 \end{itemize}
 
 \underline{Deconvolution}
@@ -451,8 +446,15 @@ Mag++98 -- must deconvolve all bands to target PSF before combining.
 	\item Use larger kernels
 	\item Treat all three bands of a certain image with the same kernel -- should be the most conservative?
 	\item User-specified PSF width. Keep total flux.
+	\begin{itemize}
+		\item Assert target PSFs of
+width 0.3,0.4,0.5,0.6,0.7,0.8,0.9, 1.0 arcsec FWHM, and make deconvolved images for each value. Then plot your quality metric(s) against FWHM.
+		\item When inventing metrics, consider that each one represents the quantitiave answer to a particular question about some aspect of the reconstructed image - its "noise" level, the correlated nature of that noise, the number of false SExtractor detections (in the reconstructed image) generated, the SExtractor flux of certain
+objects of interest, the number of inspectors who identify feature X, etc etc etc. We can propose and discuss these aspects after seeing some images. These "aspects" could also be termed "failure modes"
+	\end{itemize}
 	\item Homogenise PSF across different fields. \TODO{What is the best way to do this?} Use largest PSF $\rightarrow$ no danger of violating sampling theorem; but this may be way too blurry to be useful. Pickle.
 	\item PSFEx failure modes -- see Phil's e-mail.
+	\item Propagate/append information in the original FITS header.
 \end{itemize}
 
 \underline{Combining C\&D}
@@ -470,6 +472,14 @@ the matrix operations you perform? Any improvements we make to your
 code will probably be of the form "assign a different prior to the
 pixel values of the kernel/final image", so it'd be good to see how
 that propagates through into new matrix operations.'
+
+	\item A prior on pixel values would lead to an
+additional term (with a lagrange multiplier) added to the summed
+squared residuals. It would be good to also include the weight image, that
+characterises the actual per pixel uncertainty, because some pixels
+are going to have very high uncertainty indeed... We need to be able
+to cope with saturated pixels, chip gaps etc, and weight images is how
+you do it, in general.
 \end{itemize}
 
 
